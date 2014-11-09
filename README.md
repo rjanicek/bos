@@ -1,6 +1,6 @@
 bos - work in progress
 ===
-Big object saver efficiently saves big JavaScript objects to disk. Can be used as an in-memory database.
+Big Object Saver efficiently saves big JavaScript objects to disk. Can be used as an in-memory database.
 
 ![bos](./bos-mascot.gif "bos")
 
@@ -24,6 +24,26 @@ status.on('error', function (error) {
 });
 
 ```
+
+api
+---
+
+#### bos(`path`, `[options]`, `callback`)
+* `path` String - path and file name without extension where object files will be saved.
+* `options` Object
+    * `defaultObject` Object default = `{}` - the default object, can be `{}` or `[]` and can contain initial values
+* `callback` `function (error, object)`
+    * `error` error info or null
+    * `object` the object that will be observed and saved to disk
+* events
+    * 'data' `function (patches) {}`
+        * `patches` Array detected changes that are were saved
+    * 'error' `function (error) {}`
+        * `error` Object something went wrong!
+
+tasks
+-----
+* add compacting
 
 algorithm
 ---------

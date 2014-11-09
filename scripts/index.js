@@ -5,19 +5,51 @@
 
 'use strict';
 
+var events = require('events');
 var fs = require('fs');
+var jsonpatch = require('fast-json-patch');
+var jsonStream = require('JSONStream');
 
 var JSON_FILE_EXTENSION = '.json';
 var JSONPATCH_FILE_EXTENSION = '.log';
 var PATCH_DELIMETER = '\n';
-var DEFAULT_OBJECT = {};
 
 function stringify(object) {
 	return JSON.stringify(object, null, 2);
 }
 
+function stringifyPatchs(patches) {
+	return JSON.stringify(patches);
+}
+
 function parse(json) {
 	return JSON.parse(json);
+}
+
+function loadPatches(path, object, returnErrorAndObject) {
+	var patchFileName = path + JSONPATCH_FILE_EXTENSION;
+	fs.exists(patchFileName, function (exists) {
+		if (!exists) {
+			returnErrorAndObject(null, object);
+			return;
+		}
+
+		var stream = fs.createReadStream(patchFileName, {encoding: 'utf8'});
+	    var parser = jsonStream.parse();
+	    stream.pipe(parser);
+	    parser.on('root', function (patches) {
+			if (!jsonpatch.apply(object, patches)) {
+				stream.unpipe();
+				returnErrorAndObject('error applying patches ' + stringifyPatchs(patches));
+			}
+		});
+		stream.on('error', function (error) {
+			returnErrorAndObject(error);
+		});
+		stream.on('end', function () {
+			returnErrorAndObject(null, object);
+		});
+	});
 }
 
 function load(path, returnErrorAndObject) {
@@ -26,15 +58,15 @@ function load(path, returnErrorAndObject) {
 			returnErrorAndObject(error);
 			return;
 		}
-		returnErrorAndObject(null, parse(json));
+		loadPatches(path, parse(json), returnErrorAndObject);
 	});
 }
 
-function loadOrCreate(path, returnErrorAndObject) {
+function loadOrCreate(path, options, returnErrorAndObject) {
 	var fileName = path + JSON_FILE_EXTENSION;
 	fs.exists(fileName, function (exists) {
 		if (!exists) {
-			fs.writeFile(fileName, stringify(DEFAULT_OBJECT), function (error) {
+			fs.writeFile(fileName, stringify(options.defaultObject), function (error) {
 				if (error) {
 					returnErrorAndObject(error);
 					return;
@@ -48,6 +80,39 @@ function loadOrCreate(path, returnErrorAndObject) {
 	});
 }
 
-module.exports = function (path, returnErrorAndObject) {
-	loadOrCreate(path, returnErrorAndObject);
+function update(path, patches, emitter) {
+	var patchFileName = path + JSONPATCH_FILE_EXTENSION;
+	fs.appendFile(patchFileName, stringifyPatchs(patches) + PATCH_DELIMETER, function (error) {
+		if (error) {
+			emitter.emit('error', error);
+			return;
+		}
+		emitter.emit('data', patches);
+	});
+}
+
+module.exports = function (path, options, returnErrorAndObject) {
+	if (typeof options === 'function') {
+		returnErrorAndObject = options;
+		options = {};
+	}
+
+	options.defaultObject = options.defaultObject || {};
+
+	var emitter = new events.EventEmitter();
+
+	loadOrCreate(path, options, function (error, object) {
+		if (error) {
+			returnErrorAndObject(error);
+			return;
+		}
+
+		jsonpatch.observe(object, function (patches) {
+			update(path, patches, emitter);
+		});
+
+		returnErrorAndObject(null, object);
+	});
+
+	return emitter;
 };

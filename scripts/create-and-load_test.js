@@ -45,12 +45,35 @@ exports.should_load_existing_object = function (test) {
 		test.ok(!error);
 		test.done();
 	});
-	
+};
+
+exports.should_update_object = function (test) {
+	test.expect(1);
+
+	bos(filesPath, function (error, state) {
+		test.ok(!error);
+		state.cow = 'moo';
+	}).on('data', function (patches) {
+		test.done();
+	});
+};
+
+exports.should_load_updated_object = function (test) {
+	test.expect(2);
+
+	bos(filesPath, function (error, state) {
+		test.ok(!error);
+		test.strictEqual(state.cow, 'moo');
+		test.done();
+	});
 };
 
 exports.cleanup = function (test) {
 	fs.unlink(filesPath + '.json', function (error) {
 		test.ok(!error);
-		test.done();
+		fs.unlink(filesPath + '.log', function (error) {
+			test.ok(!error);
+			test.done();
+		});
 	});
 };
