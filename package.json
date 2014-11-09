@@ -1,0 +1,33 @@
+{
+  "name": "bos",
+  "description": "Big object saver efficiently saves big JavaScript objects to disk. Can be used as an in-memory database.",
+  "version": "0.0.0",
+  "keywords": [
+    "database",
+    "db",
+    "embed",
+    "embeddable",
+    "json",
+    "jsonpatch",
+    "rfc 6901"
+  ],
+  "license": "MIT",
+  "author": "Richard Janicek <r@janicek.co> (http://www.janicek.co)",
+  "homepage": "https://github.com/rjanicek/bos",
+    "repository": {
+    "type": "git",
+    "url": "https://github.com/rjanicek/bos"
+  },
+  "main": "scripts/index.js",
+  "devDependencies": {
+    "glob": "^4.0.6",
+    "lodash": "^2.4.1",
+    "nodeunit": "^0.9.0"
+  },
+  "dependencies": {
+    "fast-json-patch": "^0.4.0"
+  },
+  "scripts": {
+    "test": "node test"
+  }
+}
