@@ -62,6 +62,28 @@ function load(path, returnErrorAndObject) {
 	});
 }
 
+function loadAndCompact(path, returnErrorAndObject) {
+	load(path, function (error, object) {
+		var fileName = path + DATA_FILE_EXTENSION;
+		fs.writeFile(fileName, stringify(object), function (error) {
+			if (error) {
+				returnErrorAndObject(error);
+				return;
+			}
+			var logFileName = path + DATA_LOG_FILE_EXTENSION;
+			fs.exists(logFileName, function (exists) {
+				if (!exists) {
+					returnErrorAndObject(null, object);
+					return;
+				}
+				fs.unlink(logFileName, function (error) {
+					returnErrorAndObject(error, object);
+				});				
+			});
+		});
+	});
+}
+
 function loadOrCreate(path, options, returnErrorAndObject) {
 	var fileName = path + DATA_FILE_EXTENSION;
 	fs.exists(fileName, function (exists) {
@@ -76,7 +98,7 @@ function loadOrCreate(path, options, returnErrorAndObject) {
 			});
 			return;
 		}
-		load(path, returnErrorAndObject);
+		loadAndCompact(path, returnErrorAndObject);
 	});
 }
 

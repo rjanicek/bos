@@ -13,16 +13,17 @@ var dataPath = path.join(__dirname, '../data');
 var filesPath = path.join(dataPath, 'state');
 
 exports.setup = function (test) {
-	fs.exists(dataPath, function (exists) {
-		if (!exists) {
-			fs.mkdir(dataPath, function (error) {
-				test.ok(!error);
-				test.done();
-			});
-			return;
-		}
-		test.done();		
-	});
+	if (!fs.existsSync(dataPath)) {
+		fs.mkdirSync(dataPath);
+	} else {
+		[filesPath + bos.DATA_FILE_EXTENSION, filesPath + bos.DATA_LOG_FILE_EXTENSION].forEach(function (fileName) {
+			if (fs.existsSync(fileName)) {
+				fs.unlinkSync(fileName);
+			}
+		});
+	}
+
+	test.done();
 };
 
 exports.should_create_new_object = function (test) {
@@ -42,7 +43,7 @@ exports.should_load_existing_object = function (test) {
 	test.expect(1);
 
 	bos(filesPath, function (error, state) {
-		test.ok(!error);
+		test.ok(!error, error);
 		test.done();
 	});
 };
@@ -70,15 +71,5 @@ exports.should_load_updated_object = function (test) {
 		test.ok(!error);
 		test.strictEqual(state.cow, 'moo');
 		test.done();
-	});
-};
-
-exports.cleanup = function (test) {
-	fs.unlink(filesPath + bos.DATA_FILE_EXTENSION, function (error) {
-		test.ok(!error);
-		fs.unlink(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (error) {
-			test.ok(!error);
-			test.done();
-		});
 	});
 };

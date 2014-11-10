@@ -57,7 +57,9 @@ limits
 
 tasks
 -----
-* add compacting
+* add test for compacting
+* implement safe file updates during compacting by writing to a temp file, then renaming to actual file name
+* implement full compacting algorithim, currently compacting occurs every time during object loading
 * add close function that verifies all file writes are completed
 
 algorithm

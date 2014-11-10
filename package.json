@@ -1,7 +1,7 @@
 {
   "name": "bos",
   "description": "Big Object Saver - loads, watches, and progressively saves changes in a JavaScript object to disk. Can be used as a simple in-memory database.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "keywords": [
     "database",
     "db",

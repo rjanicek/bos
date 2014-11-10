@@ -13,16 +13,17 @@ var dataPath = path.join(__dirname, '../data');
 var filesPath = path.join(dataPath, 'state');
 
 exports.setup = function (test) {
-	fs.exists(dataPath, function (exists) {
-		if (!exists) {
-			fs.mkdir(dataPath, function (error) {
-				test.ok(!error);
-				test.done();
-			});
-			return;
-		}
-		test.done();		
-	});
+	if (!fs.existsSync(dataPath)) {
+		fs.mkdirSync(dataPath);
+	} else {
+		[filesPath + bos.DATA_FILE_EXTENSION, filesPath + bos.DATA_LOG_FILE_EXTENSION].forEach(function (fileName) {
+			if (fs.existsSync(fileName)) {
+				fs.unlinkSync(fileName);
+			}
+		});
+	}
+
+	test.done();
 };
 
 exports.should_create_new_object_with_default_value = function (test) {
@@ -44,9 +45,3 @@ exports.should_load_object_with_default_value = function (test) {
 	});
 };
 
-exports.cleanup = function (test) {
-	fs.unlink(filesPath + bos.DATA_FILE_EXTENSION, function (error) {
-		test.ok(!error);
-		test.done();
-	});
-};
