@@ -16,7 +16,8 @@ exports.setup = function (test) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
-		[filesPath + bos.DATA_FILE_EXTENSION, filesPath + bos.DATA_LOG_FILE_EXTENSION].forEach(function (fileName) {
+		[bos.DATA_FILE_EXTENSION, bos.DATA_LOG_FILE_EXTENSION, bos.LOCK_FILE_EXTENSION].forEach(function (extension) {
+			var fileName = filesPath + extension;
 			if (fs.existsSync(fileName)) {
 				fs.unlinkSync(fileName);
 			}
@@ -26,14 +27,17 @@ exports.setup = function (test) {
 	test.done();
 };
 
-exports.should_create_new_object = function (test) {
-	test.expect(2);
+exports.should_create_new_store = function (test) {
+	test.expect(3);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error, error);
 		fs.exists(filesPath + bos.DATA_FILE_EXTENSION, function (exists) {
 			test.ok(exists);
-			test.done();
+			store.close(function (error) {
+				test.ok(!error, error);
+				test.done();
+			});
 		});	
 	});
 	
@@ -42,22 +46,22 @@ exports.should_create_new_object = function (test) {
 exports.should_load_existing_object = function (test) {
 	test.expect(1);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error, error);
-		test.done();
+		store.close(test.done);
 	});
 };
 
 exports.should_update_object_and_create_log_file = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error);
-		state.cow = 'moo';
-	}).on('data', function (patches) {
+		store.data.cow = 'moo';
+	}).on('data', function (patches, store) {
 		fs.exists(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (exists) {
 			test.ok(exists);
-			test.done();
+			store.close(test.done);
 		});	
 	}).on('error', function (error) {
 		test.on(!error);
@@ -67,9 +71,9 @@ exports.should_update_object_and_create_log_file = function (test) {
 exports.should_load_updated_object = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error);
-		test.strictEqual(state.cow, 'moo');
-		test.done();
+		test.strictEqual(store.data.cow, 'moo');
+		store.close(test.done);
 	});
 };

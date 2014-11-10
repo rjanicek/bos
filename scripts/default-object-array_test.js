@@ -16,7 +16,8 @@ exports.setup = function (test) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
-		[filesPath + bos.DATA_FILE_EXTENSION, filesPath + bos.DATA_LOG_FILE_EXTENSION].forEach(function (fileName) {
+		[bos.DATA_FILE_EXTENSION, bos.DATA_LOG_FILE_EXTENSION, bos.LOCK_FILE_EXTENSION].forEach(function (extension) {
+			var fileName = filesPath + extension;
 			if (fs.existsSync(fileName)) {
 				fs.unlinkSync(fileName);
 			}
@@ -29,42 +30,42 @@ exports.setup = function (test) {
 exports.should_create_new_array_with_default_value = function (test) {
 	test.expect(1);
 
-	bos(filesPath, {defaultObject: ['cow', 'goes', 'moo']}, function (error, state) {
+	bos(filesPath, {defaultObject: ['cow', 'goes', 'moo']}, function (error, store) {
 		test.ok(!error);
-		test.done();
+		store.close(test.done);
 	});
 };
 
 exports.should_load_array_with_default_value = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error);
-		test.deepEqual(state, ['cow', 'goes', 'moo']);
-		test.done();
+		test.deepEqual(store.data, ['cow', 'goes', 'moo']);
+		store.close(test.done);
 	});
 };
 
 exports.should_log_array_updates = function (test) {
 	test.expect(1);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error);
-		state.push('moo');
+		store.data.push('moo');
 	}).on('error', function (error) {
 		test.ok(!error);
-	}).on('data', function (patches) {
-		test.done();
+	}).on('data', function (patches, store) {
+		store.close(test.done);
 	});
 };
 
 exports.should_load_loged_array_updates = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, function (error, store) {
 		test.ok(!error);
-		test.deepEqual(state, ['cow', 'goes', 'moo', 'moo']);
-		test.done();
+		test.deepEqual(store.data, ['cow', 'goes', 'moo', 'moo']);
+		store.close(test.done);
 	});
 };
 

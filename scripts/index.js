@@ -9,16 +9,18 @@ var events = require('events');
 var fs = require('fs');
 var jsonpatch = require('fast-json-patch');
 var jsonStream = require('JSONStream');
+var lockFile = require('lockfile');
 
 var DATA_FILE_EXTENSION = '.json';
 var DATA_LOG_FILE_EXTENSION = '.log';
+var LOCK_FILE_EXTENSION = '.lock';
 var PATCH_DELIMETER = '\n';
 
 function stringify(object) {
 	return JSON.stringify(object, null, 2);
 }
 
-function stringifyPatchs(patches) {
+function stringifyPatches(patches) {
 	return JSON.stringify(patches);
 }
 
@@ -40,7 +42,7 @@ function loadPatches(path, object, returnErrorAndObject) {
 	    parser.on('root', function (patches) {
 			if (!jsonpatch.apply(object, patches)) {
 				stream.unpipe();
-				returnErrorAndObject('error applying patches ' + stringifyPatchs(patches));
+				returnErrorAndObject('error applying patches ' + stringifyPatches(patches));
 			}
 		});
 		stream.on('error', function (error) {
@@ -102,14 +104,14 @@ function loadOrCreate(path, options, returnErrorAndObject) {
 	});
 }
 
-function update(path, patches, emitter) {
+function update(path, patches, emitter, store) {
 	var patchFileName = path + DATA_LOG_FILE_EXTENSION;
-	fs.appendFile(patchFileName, stringifyPatchs(patches) + PATCH_DELIMETER, function (error) {
+	fs.appendFile(patchFileName, stringifyPatches(patches) + PATCH_DELIMETER, function (error) {
 		if (error) {
-			emitter.emit('error', error);
+			emitter.emit('error', error, store);
 			return;
 		}
-		emitter.emit('data', patches);
+		emitter.emit('data', patches, store);
 	});
 }
 
@@ -123,17 +125,50 @@ module.exports = function (path, options, returnErrorAndObject) {
 
 	var emitter = new events.EventEmitter();
 
-	loadOrCreate(path, options, function (error, object) {
+	lockFile.lock(path + LOCK_FILE_EXTENSION, function (error) {
 		if (error) {
+			if (error.code === 'EEXIST') {
+				error.description = 'Could not open data store because files locked by other instance. If no other instance, manually delete ' + error.path;
+			}
 			returnErrorAndObject(error);
 			return;
 		}
 
-		jsonpatch.observe(object, function (patches) {
-			update(path, patches, emitter);
-		});
+		loadOrCreate(path, options, function (error, object) {
+			if (error) {
+				returnErrorAndObject(error);
+				return;
+			}
 
-		returnErrorAndObject(null, object);
+			var store = {
+				data: object
+			};
+
+			var observer = jsonpatch.observe(object, function (patches) {
+				update(path, patches, emitter, store);
+			});
+
+			store.close = function close(returnError) {
+				
+				jsonpatch.unobserve(store.data, observer);
+
+				lockFile.unlock(path + LOCK_FILE_EXTENSION, function (error) {
+					if (error) {
+						if (returnError) { returnError(error); } else { throw error; }
+						return;
+					}
+					returnError && returnError();
+				});
+			};
+
+			// process.on('exit', function () {
+			// 	store.close(function (error) {
+			// 		if (error) { throw error; }
+			// 	});
+			// });
+
+			returnErrorAndObject(null, store);
+		});
 	});
 
 	return emitter;
@@ -141,3 +176,4 @@ module.exports = function (path, options, returnErrorAndObject) {
 
 module.exports.DATA_FILE_EXTENSION = DATA_FILE_EXTENSION;
 module.exports.DATA_LOG_FILE_EXTENSION = DATA_LOG_FILE_EXTENSION;
+module.exports.LOCK_FILE_EXTENSION = LOCK_FILE_EXTENSION;

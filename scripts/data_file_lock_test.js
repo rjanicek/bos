@@ -12,7 +12,7 @@ var path = require('path');
 var dataPath = path.join(__dirname, '../data');
 var filesPath = path.join(dataPath, 'state');
 
-exports.setup = function (test) {
+exports.setUp = function (done) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
@@ -24,25 +24,31 @@ exports.setup = function (test) {
 		});
 	}
 
-	test.done();
+	done();
 };
 
-exports.should_create_new_object_with_default_value = function (test) {
-	test.expect(1);
-
-	bos(filesPath, {defaultObject: {cow: 'moo'}}, function (error, store) {
-		test.ok(!error);
-		store.close(test.done);
-	});
-};
-
-exports.should_load_object_with_default_value = function (test) {
+exports.opening_same_files_in_second_instance_should_error = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, store) {
-		test.ok(!error);
-		test.deepEqual(store.data, {cow: 'moo'});
-		store.close(test.done);
+	bos(filesPath, function (error, db) {
+		test.ok(!error, error);
+		bos(filesPath, function (error) {
+			test.ok(error);
+			test.done();
+		});
 	});
 };
 
+exports.opening_same_files_in_second_instance_after_first_instances_closes_should_be_ok = function (test) {
+	test.expect(2);
+
+	bos(filesPath, function (error, db) {
+		test.ok(!error, error);
+		db.close(function (error) {
+			bos(filesPath, function (error, db) {
+				test.ok(!error);
+				test.done();
+			});
+		});
+	});
+};

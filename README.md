@@ -15,9 +15,10 @@ usage
 ```JavaScript
 var bos = require('bos');
 
-bos('data/state', function (error, state) {
+bos('data/state', function (error, store) {
     if (error) { throw error; }
-    state.cow = 'mooo';     // this will be saved to disk
+    store.data.cow = 'mooo';     // this will be saved to disk
+    store.close();
 }).on('error', function (error) {
     console.error(error);
 });
@@ -31,19 +32,27 @@ api
 * `path` String - path and file name without extension where object files will be saved.
 * `options` Object
     * `defaultObject` Object, default = `{}` - the default object, can be `{}` or `[]` and can contain initial values
-* `callback` `function (error, object)`
-    * `error` error info or null
-    * `object` the object that was created or loaded, will be observed and saved to disk
+* `callback` `function (error, store)`
+    * `error` error info if error occurred when opening data store
+    * `store` Object - the data store
+        * `data` Object - The object that was created or loaded from disk. It will be observed and mutations progressively saved to disk.
+        * `close` `[function (error)]` complete pending file writes and clean up, should always be called when done with data store
+            * `function (error)` optional callback
+                * `error` error info if error occurred during close
 * events
-    * 'data' `function (patches) {}`
+    * 'data' `function (patches, store) {}`
         * `patches` Array - detected changes that were saved
-    * 'error' `function (error) {}`
-        * `error` Object - something went wrong!
+        * `store` Object - the data store
+    * 'error' `function (error, store) {}`
+        * `error` something went wrong!
+        * `store` Object - the data store
 
 files
 -----
 * `data.json` stringified JSON object
 * `data.log` RFC 6901 JSON patches, arrays delimited by `\n`
+* `data.lock` signals that files are in use by an instance of bos
+* `data.mutex` signals that files are inside a critical section
 
 advantages
 ----------
@@ -55,12 +64,40 @@ limits
 ------
 * object must fit into memory and be JSON.parse-able
 
+tips
+----
+* store dates as the number of milliseconds since 1 January 1970 00:00:00 UTC `new Date().getTime()`
+    * this allows more efficient querying by date / time, no need to parse date strings
+* use objects with keys to efficieltly find data
+```JavaScript
+var cows = {
+    'angus':  {use: 'beef', origin: 'Scotland'},
+    'ayrshire': {use: 'dairy', origin: 'Scotland'},
+    'holstein': {use: 'dairy', origin: 'Germany'}
+};
+
+var findCowFast = cows['holstein'];
+```
+* use functional libraries like [LoDash](https://lodash.com/docs) to work with objects
+```JavaScript
+var _ = require('lodash');
+
+var cows = {
+    'angus':  {use: 'beef', origin: 'Scotland'},
+    'ayrshire': {use: 'dairy', origin: 'Scotland'},
+    'holstein': {use: 'dairy', origin: 'Germany'}
+};
+
+_.find(cows, function(cow) {
+    return cow.origin === 'Scotland';
+});
+```
+
 tasks
 -----
 * add test for compacting
 * implement safe file updates during compacting by writing to a temp file, then renaming to actual file name
 * implement full compacting algorithim, currently compacting occurs every time during object loading
-* add close function that verifies all file writes are completed
 
 algorithm
 ---------
@@ -95,3 +132,9 @@ ideas
 * use streaming to stringify and parse objects to improve memory footprint
 * allow manual control when JSON compacting occurs for predictable performance
 * browser support
+
+similar
+-------
+* [LokiJS - javascript embeddable / in-memory database](https://github.com/techfort/LokiJS)
+* [lowdb - Flat JSON file database for Node](https://github.com/typicode/lowdb)
+* [nedb - Embedded datastore for node.js](https://github.com/louischatriot/nedb)
