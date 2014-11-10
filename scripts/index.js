@@ -10,8 +10,8 @@ var fs = require('fs');
 var jsonpatch = require('fast-json-patch');
 var jsonStream = require('JSONStream');
 
-var JSON_FILE_EXTENSION = '.json';
-var JSONPATCH_FILE_EXTENSION = '.log';
+var DATA_FILE_EXTENSION = '.json';
+var DATA_LOG_FILE_EXTENSION = '.log';
 var PATCH_DELIMETER = '\n';
 
 function stringify(object) {
@@ -27,7 +27,7 @@ function parse(json) {
 }
 
 function loadPatches(path, object, returnErrorAndObject) {
-	var patchFileName = path + JSONPATCH_FILE_EXTENSION;
+	var patchFileName = path + DATA_LOG_FILE_EXTENSION;
 	fs.exists(patchFileName, function (exists) {
 		if (!exists) {
 			returnErrorAndObject(null, object);
@@ -53,7 +53,7 @@ function loadPatches(path, object, returnErrorAndObject) {
 }
 
 function load(path, returnErrorAndObject) {
-	fs.readFile(path + JSON_FILE_EXTENSION, {encoding: 'utf8'}, function (error, json) {
+	fs.readFile(path + DATA_FILE_EXTENSION, {encoding: 'utf8'}, function (error, json) {
 		if (error) {
 			returnErrorAndObject(error);
 			return;
@@ -63,7 +63,7 @@ function load(path, returnErrorAndObject) {
 }
 
 function loadOrCreate(path, options, returnErrorAndObject) {
-	var fileName = path + JSON_FILE_EXTENSION;
+	var fileName = path + DATA_FILE_EXTENSION;
 	fs.exists(fileName, function (exists) {
 		if (!exists) {
 			fs.writeFile(fileName, stringify(options.defaultObject), function (error) {
@@ -81,7 +81,7 @@ function loadOrCreate(path, options, returnErrorAndObject) {
 }
 
 function update(path, patches, emitter) {
-	var patchFileName = path + JSONPATCH_FILE_EXTENSION;
+	var patchFileName = path + DATA_LOG_FILE_EXTENSION;
 	fs.appendFile(patchFileName, stringifyPatchs(patches) + PATCH_DELIMETER, function (error) {
 		if (error) {
 			emitter.emit('error', error);
@@ -116,3 +116,6 @@ module.exports = function (path, options, returnErrorAndObject) {
 
 	return emitter;
 };
+
+module.exports.DATA_FILE_EXTENSION = DATA_FILE_EXTENSION;
+module.exports.DATA_LOG_FILE_EXTENSION = DATA_LOG_FILE_EXTENSION;

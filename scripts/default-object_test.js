@@ -25,50 +25,21 @@ exports.setup = function (test) {
 	});
 };
 
-exports.should_create_new_object = function (test) {
-	test.expect(2);
-
-	bos(filesPath, function (error, state) {
-		test.ok(!error, error);
-		fs.exists(filesPath + bos.DATA_FILE_EXTENSION, function (exists) {
-			test.ok(exists);
-			test.done();
-		});	
-	});
-	
-};
-
-exports.should_load_existing_object = function (test) {
+exports.should_create_new_object_with_default_value = function (test) {
 	test.expect(1);
 
-	bos(filesPath, function (error, state) {
+	bos(filesPath, {defaultObject: {cow: 'moo'}}, function (error, state) {
 		test.ok(!error);
 		test.done();
 	});
 };
 
-exports.should_update_object_and_create_log_file = function (test) {
+exports.should_load_object_with_default_value = function (test) {
 	test.expect(2);
 
 	bos(filesPath, function (error, state) {
 		test.ok(!error);
-		state.cow = 'moo';
-	}).on('data', function (patches) {
-		fs.exists(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (exists) {
-			test.ok(exists);
-			test.done();
-		});	
-	}).on('error', function (error) {
-		test.on(!error);
-	});
-};
-
-exports.should_load_updated_object = function (test) {
-	test.expect(2);
-
-	bos(filesPath, function (error, state) {
-		test.ok(!error);
-		test.strictEqual(state.cow, 'moo');
+		test.deepEqual(state, {cow: 'moo'});
 		test.done();
 	});
 };
@@ -76,9 +47,6 @@ exports.should_load_updated_object = function (test) {
 exports.cleanup = function (test) {
 	fs.unlink(filesPath + bos.DATA_FILE_EXTENSION, function (error) {
 		test.ok(!error);
-		fs.unlink(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (error) {
-			test.ok(!error);
-			test.done();
-		});
+		test.done();
 	});
 };

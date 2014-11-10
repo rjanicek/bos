@@ -1,6 +1,6 @@
-bos - work in progress
+bos
 ===
-Big Object Saver efficiently saves big JavaScript objects to disk. Can be used as an in-memory database.
+Big Object Saver - loads, watches, and progressively saves *changes* in a JavaScript object to disk. Can be used as a simple in-memory database.
 
 ![bos](./bos-mascot.gif "bos")
 
@@ -14,12 +14,11 @@ usage
 -----
 ```JavaScript
 var bos = require('bos');
-var status = bos('state', function (error, state) {
-    if (error) { throw error; }
-    state.cow = 'mooo';
-});
 
-status.on('error', function (error) {
+bos('data/state', function (error, state) {
+    if (error) { throw error; }
+    state.cow = 'mooo';     // this will be saved to disk
+}).on('error', function (error) {
     console.error(error);
 });
 
@@ -31,19 +30,35 @@ api
 #### bos(`path`, `[options]`, `callback`)
 * `path` String - path and file name without extension where object files will be saved.
 * `options` Object
-    * `defaultObject` Object default = `{}` - the default object, can be `{}` or `[]` and can contain initial values
+    * `defaultObject` Object, default = `{}` - the default object, can be `{}` or `[]` and can contain initial values
 * `callback` `function (error, object)`
     * `error` error info or null
-    * `object` the object that will be observed and saved to disk
+    * `object` the object that was created or loaded, will be observed and saved to disk
 * events
     * 'data' `function (patches) {}`
-        * `patches` Array detected changes that are were saved
+        * `patches` Array - detected changes that were saved
     * 'error' `function (error) {}`
-        * `error` Object something went wrong!
+        * `error` Object - something went wrong!
+
+files
+-----
+* `data.json` stringified JSON object
+* `data.log` RFC 6901 JSON patches, arrays delimited by `\n`
+
+advantages
+----------
+* efficient writes, only object *changes* are progressively saved to disk
+* simple api, it's just a JavaScript object
+* use your favorite functional libraries to work with the object
+
+limits
+------
+* object must fit into memory and be JSON.parse-able
 
 tasks
 -----
 * add compacting
+* add close function that verifies all file writes are completed
 
 algorithm
 ---------
@@ -77,3 +92,4 @@ ideas
 -----
 * use streaming to stringify and parse objects to improve memory footprint
 * allow manual control when JSON compacting occurs for predictable performance
+* browser support
