@@ -1,7 +1,7 @@
 {
   "name": "bos",
-  "description": "Big Object Saver - loads, watches, and progressively saves changes in a JavaScript object to disk. Can be used as a simple in-memory database.",
-  "version": "0.0.4",
+  "description": "Big Object Store - loads, watches, and progressively saves *changes* in a JavaScript object to disk. Designed for node.js. Can be used as a simple database.",
+  "version": "0.0.5",
   "keywords": [
     "database",
     "db",
@@ -18,7 +18,8 @@
     "type": "git",
     "url": "https://github.com/rjanicek/bos"
   },
-  "main": "scripts/index.js",
+  "main": "scripts/bos.js",
+  "bin": "scripts/bos-cli.js",
   "devDependencies": {
     "glob": "^4.0.6",
     "lodash": "^2.4.1",
@@ -26,6 +27,7 @@
   },
   "dependencies": {
     "JSONStream": "^0.9.0",
+    "async": "^0.9.0",
     "fast-json-patch": "^0.4.0",
     "lockfile": "^1.0.0"
   },

@@ -1,8 +1,20 @@
 bos
 ===
-Big Object Saver - loads, watches, and progressively saves *changes* in a JavaScript object to disk. Can be used as a simple in-memory database.
+Big Object Store - loads, watches, and progressively saves *changes* in a JavaScript object to disk. Designed for node.js. Can be used as a simple database.
 
 ![bos](./bos-mascot.gif "bos")
+
+advantages
+----------
+* Efficient asynchronous writes, only object *changes* are progressively saved to disk. As the list of changes grows, it is periodically merged into the main data file. Merging is done in a seperate process so your application can continue to work un-interrupted.
+* Simple api, it's just a JavaScript object. Whatever you do to the object is saved to disk asynchronously and automatically. 
+* Use your favorite functional libraries to work with the object, Lo-Dash, Underscore.js, Lazy.js.
+* The root object can be an object or an array.
+
+limits
+------
+* The object must fit into memory and be JSON.parse-able.
+* If you need to store more data than will fit into memory, you should not use bos.
 
 install
 -------
@@ -15,9 +27,13 @@ usage
 ```JavaScript
 var bos = require('bos');
 
-bos('data/state', function (error, store) {
+bos('data/store', function (error, store) {
     if (error) { throw error; }
-    store.data.cow = 'mooo';     // this will be saved to disk
+
+    store.data.cow = 'mooo';                    // this will be saved to disk
+    store.data.cows = ['angus', 'ayrshire'];    // this will be saved to disk
+    store.data.cows.push('holstein');           // this will be saved to disk
+
     store.close();
 }).on('error', function (error) {
     console.error(error);
@@ -28,17 +44,21 @@ bos('data/state', function (error, store) {
 api
 ---
 
-#### bos(`path`, `[options]`, `callback`)
-* `path` String - path and file name without extension where object files will be saved.
+#### bos(`dataStorePath`, `[options]`, `callback`)
+* `dataStorePath` String - Path and file name without extension where data store files will be saved.
 * `options` Object
-    * `defaultObject` Object, default = `{}` - the default object, can be `{}` or `[]` and can contain initial values
+    * `defaultObject` Object, default = `{}` - The default object, can be `{}` or `[]` and can contain initial values.
+    * `autoCompact` Boolean, default = true - Automatically compact data store files if log is bigger than data on start-up and then on hourly interval.
 * `callback` `function (error, store)`
     * `error` error info if error occurred when opening data store
     * `store` Object - the data store
-        * `data` Object - The object that was created or loaded from disk. It will be observed and mutations progressively saved to disk.
-        * `close` `[function (error)]` complete pending file writes and clean up, should always be called when done with data store
+        * ***`data` Object - The object that was created or loaded from disk. It will be observed and changes progressively saved to disk.***
+        * `close` `[function (error)]` Complete pending file writes and clean up, should always be called when done with data store.
             * `function (error)` optional callback
                 * `error` error info if error occurred during close
+        * `compact` '[function (error)]' Spawns a new process that applies patches accumulated in the log file to the data file.
+            * `function (error)` optional callback that is called when compacting is done
+                * `error` error info if error occurred during compacting
 * events
     * 'data' `function (patches, store) {}`
         * `patches` Array - detected changes that were saved
@@ -49,25 +69,14 @@ api
 
 files
 -----
-* `data.json` stringified JSON object
-* `data.log` RFC 6901 JSON patches, arrays delimited by `\n`
-* `data.lock` signals that files are in use by an instance of bos
-* `data.mutex` signals that files are inside a critical section
-
-advantages
-----------
-* efficient writes, only object *changes* are progressively saved to disk
-* simple api, it's just a JavaScript object
-* use your favorite functional libraries to work with the object
-
-limits
-------
-* object must fit into memory and be JSON.parse-able
+* `store.json` stringified JSON object
+* `store.log` RFC 6901 JSON patches, arrays delimited by `\n`
+* `store.lock` signals that files are in use by an instance of bos
+* `store.mutex` signals that files are inside a critical section
 
 tips
 ----
-* store dates as the number of milliseconds since 1 January 1970 00:00:00 UTC `new Date().getTime()`
-    * this allows more efficient querying by date / time, no need to parse date strings
+* Store dates as the number of milliseconds since 1 January 1970 00:00:00 UTC `new Date().getTime()` This allows more efficient querying by date / time, no need to parse date strings.
 * use objects with keys to efficieltly find data
 ```JavaScript
 var cows = {
@@ -95,9 +104,8 @@ _.find(cows, function(cow) {
 
 tasks
 -----
-* add test for compacting
-* implement safe file updates during compacting by writing to a temp file, then renaming to actual file name
-* implement full compacting algorithim, currently compacting occurs every time during object loading
+* account for failed data write during compacting
+    * temp patch file would not get deleted, so maybe check it's existence during next compacting and merge it before the active patch file
 
 algorithm
 ---------
@@ -129,9 +137,10 @@ algorithm
 
 ideas
 -----
-* use streaming to stringify and parse objects to improve memory footprint
-* allow manual control when JSON compacting occurs for predictable performance
-* browser support
+* provide configurable callback option for auto-compact triggering
+* if JSON.parse & JSON.stringify are inefficient / use lots of memory
+    * try use streaming to stringify and parse objects
+    * Research using just JSON patches to store all data. Patches can be processed atomically so would be easier on memory. jsonpatch.compare({}, data) will generate an array of patches completely describing the object. Is jsonpatch.compare efficient? Can it stream patches instead of buffering them?
 
 similar
 -------

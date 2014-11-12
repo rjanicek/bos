@@ -12,7 +12,7 @@ var path = require('path');
 var dataPath = path.join(__dirname, '../data');
 var filesPath = path.join(dataPath, 'store');
 
-exports.setup = function (test) {
+exports.setup_delete_files = function (test) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
@@ -27,36 +27,7 @@ exports.setup = function (test) {
 	test.done();
 };
 
-exports.should_create_new_store = function (test) {
-	test.expect(3);
-
-	bos(filesPath, { autoCompact: false }, function (error, store) {
-		test.ok(!error, error);
-		fs.exists(filesPath + bos.DATA_FILE_EXTENSION, function (exists) {
-			test.ok(exists);
-			store.close(function (error) {
-				test.ok(!error, error);
-				test.done();
-			});
-		});	
-	});
-	
-};
-
-exports.should_load_existing_object = function (test) {
-	test.expect(1);
-
-	bos(filesPath, { autoCompact: false }, function (error, store) {
-		test.ok(!error, error);
-		if (store) {
-			store.close(test.done);
-		} else {
-			test.done();
-		}
-	});
-};
-
-exports.should_update_object_and_create_log_file = function (test) {
+exports.setup_create_store_with_log = function (test) {
 	test.expect(2);
 
 	bos(filesPath, { autoCompact: false }, function (error, store) {
@@ -72,7 +43,30 @@ exports.should_update_object_and_create_log_file = function (test) {
 	});
 };
 
-exports.should_load_updated_object = function (test) {
+exports.should_compact_store = function (test) {
+	test.expect(2);
+
+	bos(filesPath, { autoCompact: false }, function (error, store) {
+		error && console.error(error);
+		test.ifError(error);
+		store.compact(function (error) {
+			error && console.error(error);
+			test.ifError(error);
+			store.close(test.done);
+		});		
+	});
+};
+
+exports.log_should_be_gone_after_compact = function (test) {
+	test.expect(1);
+
+	fs.exists(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (exists) {
+		test.ok(!exists);
+		test.done();
+	});	
+};
+
+exports.compacted_store_should_contain_correct_value = function (test) {
 	test.expect(2);
 
 	bos(filesPath, { autoCompact: false }, function (error, store) {
@@ -82,3 +76,4 @@ exports.should_load_updated_object = function (test) {
 		store.close(test.done);
 	});
 };
+

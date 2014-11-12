@@ -5,12 +5,12 @@
 
 'use strict';
 
-var bos = require('./index');
+var bos = require('./bos');
 var fs = require('fs');
 var path = require('path');
 
 var dataPath = path.join(__dirname, '../data');
-var filesPath = path.join(dataPath, 'state');
+var filesPath = path.join(dataPath, 'store');
 
 exports.setup = function (test) {
 	if (!fs.existsSync(dataPath)) {
@@ -30,7 +30,7 @@ exports.setup = function (test) {
 exports.should_create_new_object_with_default_value = function (test) {
 	test.expect(1);
 
-	bos(filesPath, {defaultObject: {cow: 'moo'}}, function (error, store) {
+	bos(filesPath, { defaultObject: {cow: 'moo'}, autoCompact: false }, function (error, store) {
 		test.ok(!error);
 		store.close(test.done);
 	});
@@ -39,7 +39,7 @@ exports.should_create_new_object_with_default_value = function (test) {
 exports.should_load_object_with_default_value = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, store) {
+	bos(filesPath, { autoCompact: false }, function (error, store) {
 		test.ok(!error);
 		test.deepEqual(store.data, {cow: 'moo'});
 		store.close(test.done);

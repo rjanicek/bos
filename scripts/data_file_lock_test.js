@@ -5,12 +5,12 @@
 
 'use strict';
 
-var bos = require('./index');
+var bos = require('./bos');
 var fs = require('fs');
 var path = require('path');
 
 var dataPath = path.join(__dirname, '../data');
-var filesPath = path.join(dataPath, 'state');
+var filesPath = path.join(dataPath, 'store');
 
 exports.setUp = function (done) {
 	if (!fs.existsSync(dataPath)) {
@@ -30,9 +30,9 @@ exports.setUp = function (done) {
 exports.opening_same_files_in_second_instance_should_error = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, db) {
+	bos(filesPath, { autoCompact: false }, function (error, db) {
 		test.ok(!error, error);
-		bos(filesPath, function (error) {
+		bos(filesPath, { autoCompact: false }, function (error) {
 			test.ok(error);
 			test.done();
 		});
@@ -42,10 +42,10 @@ exports.opening_same_files_in_second_instance_should_error = function (test) {
 exports.opening_same_files_in_second_instance_after_first_instances_closes_should_be_ok = function (test) {
 	test.expect(2);
 
-	bos(filesPath, function (error, db) {
+	bos(filesPath, { autoCompact: false }, function (error, db) {
 		test.ok(!error, error);
 		db.close(function (error) {
-			bos(filesPath, function (error, db) {
+			bos(filesPath, { autoCompact: false }, function (error, db) {
 				test.ok(!error);
 				test.done();
 			});
