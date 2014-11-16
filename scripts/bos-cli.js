@@ -5,28 +5,57 @@
 
 'use strict';
 
-var path = require('path');
 var core = require('./bos-core');
 
-function getPathFromArgs() {
-	if (process.argv.length !== 4 || process.argv[2] !== 'compact') {
-		console.log('usage: bos compact path/store-name');
-		process.exit(0);
-	}
+function help() {
+	console.log('usage: bos <command>');
+	console.log('');
+	console.log('  compact        bos compact <path/store-name>');
+	console.log('                 Compacts the store by merging log file into main data file.');
+	console.log('                 This command may be used while an instance of bos is using the');
+	console.log('                 data store.');
+	console.log('');
+	console.log('  unlock         bos unlock <path/store-name>');
+	console.log('                 Removes all file locks on data store.');
 
-	return process.argv[3];
+	process.exit(0);
 }
 
+function parseArgv() {
+	var argv = process.argv;
 
-var path = getPathFromArgs();
+	argv.length < 3 && help();
 
-console.log('compacting', path);
+	var args = {
+		path: argv.pop(),
+		command: argv.pop().toLowerCase()
+	};
 
-core.compact(path, function (error, data) {
-	if (error)  {
-		console.error(error);
-		return;
+	return args;
+}
+
+function dispatch(args) {
+	switch (args.command) {
+		case 'compact': 
+			console.log('compacting', args.path);
+			core.compact(args.path, function (error, data) {
+				if (error)  {
+					console.error(error);
+					return;
+				}
+
+				console.log('finished compacting', args.path);
+			});
+			break;
+
+		case 'unlock':
+			core.unlock(args.path, function (error) {
+				error && console.error(error);
+			});
+			break;
+
+		default: help();
 	}
+}
 
-	console.log('finished compacting', path);
-});
+dispatch(parseArgv());

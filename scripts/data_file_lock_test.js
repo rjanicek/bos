@@ -6,6 +6,7 @@
 'use strict';
 
 var bos = require('./bos');
+var core = require('./bos-core');
 var fs = require('fs');
 var path = require('path');
 
@@ -16,7 +17,7 @@ exports.setUp = function (done) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
-		[bos.DATA_FILE_EXTENSION, bos.DATA_LOG_FILE_EXTENSION, bos.LOCK_FILE_EXTENSION].forEach(function (extension) {
+		[core.DATA_FILE_EXTENSION, core.DATA_LOG_FILE_EXTENSION, core.LOCK_FILE_EXTENSION].forEach(function (extension) {
 			var fileName = filesPath + extension;
 			if (fs.existsSync(fileName)) {
 				fs.unlinkSync(fileName);

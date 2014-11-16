@@ -16,7 +16,7 @@ var path = require('path');
 
 var DATA_FILE_EXTENSION = core.DATA_FILE_EXTENSION;
 var DATA_LOG_FILE_EXTENSION = core.DATA_LOG_FILE_EXTENSION;
-var LOCK_FILE_EXTENSION = '.lock';
+var LOCK_FILE_EXTENSION = core.LOCK_FILE_EXTENSION;
 
 var AUTO_COMPACT_INTERVAL_MS = 1000 * 60 * 60;	// 1 hour
 
@@ -119,7 +119,6 @@ function initializeStore(storePath, emitter, options, returnErrorAndStore) {
 		options.autoCompact && scheduleCompact(storePath, store, emitter, 0);
 
 		returnErrorAndStore(undefined, store);
-		
 	});	
 }
 
@@ -149,6 +148,4 @@ module.exports = function (storePath, options, returnErrorAndStore) {
 	return emitter;
 };
 
-module.exports.DATA_FILE_EXTENSION = DATA_FILE_EXTENSION;
-module.exports.DATA_LOG_FILE_EXTENSION = DATA_LOG_FILE_EXTENSION;
-module.exports.LOCK_FILE_EXTENSION = LOCK_FILE_EXTENSION;
+module.exports.unlock = core.unlock;

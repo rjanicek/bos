@@ -67,6 +67,26 @@ api
         * `error` something went wrong!
         * `store` Object - the data store
 
+#### bos.unlock(`dataStorePath`, `callback`)
+If your application exists without calling `close`, bos will try to unlock the data store files but in some cases this may not be possible. Use this function to manually unlock a data store.
+* `dataStorePath` String - Path and file name without extension of data store files to unlock.
+* `callback` `function (error)`
+    * `error` error info if error occurred when unlocking the data store
+
+cli
+---
+```
+usage: bos <command>
+
+  compact        bos compact <path/store-name>
+                 Compacts the store by merging log file into main data file.
+                 This command may be used while an instance of bos is using the
+                 data store.
+
+  unlock         bos unlock <path/store-name>
+                 Removes all file locks on data store.
+```
+
 files
 -----
 * `store.json` stringified JSON object
@@ -104,6 +124,13 @@ _.find(cows, function(cow) {
 
 tasks
 -----
+
+* remove file locks when process is terminated
+    * Lockfile already tries it's best to remove locks on process exit. Best way to handle is to provide tools to manually remove locks when necessary.
+        * add cli command to unlock store files
+    * https://github.com/remy/nodemon/issues/140
+    * http://stackoverflow.com/questions/18661388/node-child-process-cleanup
+    * https://github.com/remy/nodemon#controlling-shutdown-of-your-script
 * account for failed data write during compacting
     * temp patch file would not get deleted, so maybe check it's existence during next compacting and merge it before the active patch file
 

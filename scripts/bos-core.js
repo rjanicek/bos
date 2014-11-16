@@ -13,6 +13,7 @@ var lockFile = require('lockfile');
 
 var DATA_FILE_EXTENSION = '.json';
 var DATA_LOG_FILE_EXTENSION = '.log';
+var LOCK_FILE_EXTENSION = '.lock';
 var MUTEX_FILE_EXTENSION = '.mutex';
 var TEMP_FILE_SUFFIX = '~';
 
@@ -167,6 +168,14 @@ me.compact = function (storePath, returnErrorAndObject) {
 	});
 };
 
+me.unlock = function (storePath, returnError) {
+	async.parallel([
+		lockFile.unlock.bind(null, storePath + LOCK_FILE_EXTENSION),
+		lockFile.unlock.bind(null, storePath + MUTEX_FILE_EXTENSION)
+	], returnError);
+};
+
 me.DATA_FILE_EXTENSION = DATA_FILE_EXTENSION;
 me.DATA_LOG_FILE_EXTENSION = DATA_LOG_FILE_EXTENSION;
+me.LOCK_FILE_EXTENSION = LOCK_FILE_EXTENSION;
 me.MUTEX_FILE_EXTENSION = MUTEX_FILE_EXTENSION;

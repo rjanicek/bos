@@ -6,6 +6,7 @@
 'use strict';
 
 var bos = require('./bos');
+var core = require('./bos-core');
 var fs = require('fs');
 var path = require('path');
 
@@ -16,7 +17,7 @@ exports.setup_delete_files = function (test) {
 	if (!fs.existsSync(dataPath)) {
 		fs.mkdirSync(dataPath);
 	} else {
-		[bos.DATA_FILE_EXTENSION, bos.DATA_LOG_FILE_EXTENSION, bos.LOCK_FILE_EXTENSION].forEach(function (extension) {
+		[core.DATA_FILE_EXTENSION, core.DATA_LOG_FILE_EXTENSION, core.LOCK_FILE_EXTENSION].forEach(function (extension) {
 			var fileName = filesPath + extension;
 			if (fs.existsSync(fileName)) {
 				fs.unlinkSync(fileName);
@@ -34,7 +35,7 @@ exports.setup_create_store_with_log = function (test) {
 		test.ok(!error, error);
 		store.data.cow = 'moo';
 	}).on('data', function (patches, store) {
-		fs.exists(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (exists) {
+		fs.exists(filesPath + core.DATA_LOG_FILE_EXTENSION, function (exists) {
 			test.ok(exists);
 			store.close(test.done);
 		});	
@@ -60,7 +61,7 @@ exports.should_compact_store = function (test) {
 exports.log_should_be_gone_after_compact = function (test) {
 	test.expect(1);
 
-	fs.exists(filesPath + bos.DATA_LOG_FILE_EXTENSION, function (exists) {
+	fs.exists(filesPath + core.DATA_LOG_FILE_EXTENSION, function (exists) {
 		test.ok(!exists);
 		test.done();
 	});	
