@@ -125,12 +125,6 @@ _.find(cows, function(cow) {
 tasks
 -----
 
-* remove file locks when process is terminated
-    * Lockfile already tries it's best to remove locks on process exit. Best way to handle is to provide tools to manually remove locks when necessary.
-        * add cli command to unlock store files
-    * https://github.com/remy/nodemon/issues/140
-    * http://stackoverflow.com/questions/18661388/node-child-process-cleanup
-    * https://github.com/remy/nodemon#controlling-shutdown-of-your-script
 * account for failed data write during compacting
     * temp patch file would not get deleted, so maybe check it's existence during next compacting and merge it before the active patch file
 
