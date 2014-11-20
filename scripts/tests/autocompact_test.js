@@ -46,17 +46,17 @@ exports.setup_create_store_with_log = function (test) {
 	});
 };
 
-exports.should_compact_store = function (test) {
-	test.expect(2);
+exports.should_autocompact_store = function (test) {
+	test.expect(1);
 
-	bos(filesPath, { autoCompact: false }, function (error, store) {
+	var store = bos(filesPath, { autoCompact: true }, function (error, store) {
 		error && console.error(error);
 		test.ifError(error);
-		store.compact(function (error) {
-			error && console.error(error);
-			test.ifError(error);
-			store.close(test.done);
-		});		
+	}).on('error', function (error) {
+		error && console.error(error);
+		test.ifError(error);
+	}).on('compacted', function () {
+		store.close(test.done);
 	});
 };
 
@@ -77,19 +77,25 @@ exports.compacted_store_should_contain_correct_value = function (test) {
 		test.ifError(error);
 		test.strictEqual(store.data.cow, 'moo');
 		store.close(test.done);
+	}).on('error', function (error) {
+		error && console.error(error);
+		test.ifError(error);
 	});
 };
 
-exports.compact_without_log_should_be_ok = function (test) {
-	test.expect(2);
+exports.autocompact_without_log_should_not_compact = function (test) {
+	test.expect(1);
 
-	bos(filesPath, { autoCompact: false }, function (error, store) {
+	bos(filesPath, { autoCompact: true }, function (error, store) {
 		error && console.error(error);
 		test.ifError(error);
-		store.compact(function (error) {
-			error && console.error(error);
-			test.ifError(error);
+		setTimeout(function () {
 			store.close(test.done);
-		});
+		}, 500);
+	}).on('error', function (error) {
+		error && console.error(error);
+		test.ifError(error);
+	}).on('compacted', function () {
+		test.ok(false, 'should not have compacted!');
 	});
 };

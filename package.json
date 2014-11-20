@@ -1,7 +1,7 @@
 {
   "name": "bos",
   "description": "Big Object Store - loads, watches, and progressively saves *changes* in a JavaScript object to disk. Designed for node.js. Can be used as a simple database.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "keywords": [
     "database",
     "db",
@@ -21,7 +21,7 @@
   "main": "scripts/bos.js",
   "bin": "scripts/bos-cli.js",
   "devDependencies": {
-    "glob": "^4.1.6",
+    "glob": "^4.2.0",
     "lodash": "^2.4.1",
     "nodeunit": "^0.9.0"
   },

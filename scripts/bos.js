@@ -44,6 +44,7 @@ function update(storePath, patches, store) {
 	var patchFileName = storePath + DATA_LOG_FILE_EXTENSION;
 	fs.appendFile(patchFileName, core.stringifyPatches(patches) + PATCH_DELIMETER, function (error) {
 		if (error) {
+			error.stacktrace = new Error().stack;
 			store.emit('error', error);
 			return;
 		}
@@ -56,31 +57,55 @@ function compactTrigger(storePath, returnErrorAndShouldCompact) {
 		getDataFileStats: function (done) {
 			fs.stat(storePath + DATA_FILE_EXTENSION, done);
 		},
-		getLogFileStats: function (done) {
+		existsLogFile: function (done) {
+			fs.exists(storePath + DATA_LOG_FILE_EXTENSION, function (exists) {
+				done(undefined, exists);
+			});
+		},
+		getLogFileStats: ['existsLogFile', function (done, results) {
+			if (!results.existsLogFile) {
+				done();
+				return;
+			}
 			fs.stat(storePath + DATA_LOG_FILE_EXTENSION, done);
-		}
+		}]
 	}, function (error, results) {
 		if (error) {
 			returnErrorAndShouldCompact(error);
+			return;
+		}
+		if (!results.existsLogFile) {
+			returnErrorAndShouldCompact(undefined, false);
 			return;
 		}
 		returnErrorAndShouldCompact(undefined, results.getLogFileStats.size > results.getDataFileStats.size);
 	});
 }
 
-function scheduleCompact(storePath, store, interval) {
+function scheduleCompact(storePath, store) {
 	compactTrigger(storePath, function (error, shouldCompact) {
-		error && store.emit('error', error);
-		shouldCompact && store.compact(function (error) {
-			error && store.emit('error', error);
-			setTimeout(scheduleCompact.bind(undefined, storePath, store, AUTO_COMPACT_INTERVAL_MS), interval);
-		});
+		if (error) {
+			error.stacktrace = new Error().stack;
+			store.emit('error', error);
+		}
+		if (shouldCompact) {
+			store.compact(function (error) {
+				if (error) {
+					error.stacktrace = new Error().stack;
+					store.emit('error', error);
+				}
+				setTimeout(scheduleCompact.bind(undefined, storePath, store), AUTO_COMPACT_INTERVAL_MS);
+			});
+			return;
+		}
+		setTimeout(scheduleCompact.bind(undefined, storePath, store), AUTO_COMPACT_INTERVAL_MS);
 	});
 }
 
 function initializeStore(storePath, store, options, returnErrorAndStore) {
 	loadOrCreateData(storePath, options, function (error, data) {
 		if (error) {
+			error.stacktrace = new Error().stack;
 			store.emit('error', error);
 			returnErrorAndStore && returnErrorAndStore(error);
 			return;
@@ -97,6 +122,7 @@ function initializeStore(storePath, store, options, returnErrorAndStore) {
 
 			lockFile.unlock(storePath + LOCK_FILE_EXTENSION, function (error) {
 				if (error) {
+					error.stacktrace = new Error().stack;
 					store.emit('error', error);
 					if (returnError) { returnError(error); } else { throw error; }
 					return;
@@ -117,15 +143,17 @@ function initializeStore(storePath, store, options, returnErrorAndStore) {
 			execFile('node', [path.join(__dirname, 'bos-cli.js'), 'compact', storePath], function (error, stdout, stderr) {
 				isCompacting = false;
 				if (error || stderr) {
+					error.stacktrace = new Error().stack;
 					store.emit('error', error || stderr);
 					returnError && returnError(error || stderr);
 					return;
 				}
+				store.emit('compacted');
 				returnError();
 			});
 		};
 
-		options.autoCompact && scheduleCompact(storePath, store, 0);
+		options.autoCompact && scheduleCompact(storePath, store);
 
 		store.emit('ready');
 
@@ -149,7 +177,8 @@ module.exports = function (storePath, options, returnErrorAndStore) {
 			if (error.code === 'EEXIST') {
 				error.description = 'Could not open data store because files are locked by another instance. If no other instance, manually delete ' + error.path;
 			}
-			error && store.emit('error', error);
+			error.stacktrace = new Error().stack;
+			store.emit('error', error);
 			returnErrorAndStore && returnErrorAndStore(error);
 			return;
 		}

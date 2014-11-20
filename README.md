@@ -68,16 +68,19 @@ Completes pending file writes and cleans up. You should always call this functio
 -------------------------------------------------------------------------------
 #### events
 
-#####`store.emit(`'ready'`)`
+store.emit('**ready**')  
 The data store is open and ready for business.
 
-#####`store.emit(`'data'`, patches)`
+store.emit('**data**', patches)  
 A change in the `store.data` object triggers this event. The event receives an array of `patches` that contain the changes.
 
-#####`store.emit(`'error'`, error)`
+store.emit('**compacted**')  
+The data store was compacted.
+
+store.emit('**error**', error)  
 Something went wrong, ohh noo! The event receives the error.
 
-#####`store.emit(`'closed'`)`
+store.emit('**closed**')  
 The data store was closed.
 
 -------------------------------------------------------------------------------
