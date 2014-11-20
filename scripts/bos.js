@@ -40,14 +40,14 @@ function loadOrCreateData(storePath, options, returnErrorAndData) {
 	});
 }
 
-function update(storePath, patches, emitter, store) {
+function update(storePath, patches, store) {
 	var patchFileName = storePath + DATA_LOG_FILE_EXTENSION;
 	fs.appendFile(patchFileName, core.stringifyPatches(patches) + PATCH_DELIMETER, function (error) {
 		if (error) {
-			emitter.emit('error', error, store);
+			store.emit('error', error);
 			return;
 		}
-		emitter.emit('data', patches, store);
+		store.emit('data', patches);
 	});
 }
 
@@ -68,28 +68,28 @@ function compactTrigger(storePath, returnErrorAndShouldCompact) {
 	});
 }
 
-function scheduleCompact(storePath, store, emitter, interval) {
+function scheduleCompact(storePath, store, interval) {
 	compactTrigger(storePath, function (error, shouldCompact) {
+		error && store.emit('error', error);
 		shouldCompact && store.compact(function (error) {
-			error && emitter.emit('error', error);
-			setTimeout(scheduleCompact.bind(undefined, storePath, store, emitter, AUTO_COMPACT_INTERVAL_MS), interval);
+			error && store.emit('error', error);
+			setTimeout(scheduleCompact.bind(undefined, storePath, store, AUTO_COMPACT_INTERVAL_MS), interval);
 		});
 	});
 }
 
-function initializeStore(storePath, emitter, options, returnErrorAndStore) {
+function initializeStore(storePath, store, options, returnErrorAndStore) {
 	loadOrCreateData(storePath, options, function (error, data) {
 		if (error) {
-			returnErrorAndStore(error);
+			store.emit('error', error);
+			returnErrorAndStore && returnErrorAndStore(error);
 			return;
 		}
 
-		var store = {
-			data: data
-		};
+		store.data = data;
 
 		var observer = jsonpatch.observe(data, function (patches) {
-			update(storePath, patches, emitter, store);
+			update(storePath, patches, store);
 		});
 
 		store.close = function close(returnError) {
@@ -97,9 +97,13 @@ function initializeStore(storePath, emitter, options, returnErrorAndStore) {
 
 			lockFile.unlock(storePath + LOCK_FILE_EXTENSION, function (error) {
 				if (error) {
+					store.emit('error', error);
 					if (returnError) { returnError(error); } else { throw error; }
 					return;
 				}
+
+				store.emit('closed');
+
 				returnError && returnError();
 			});
 		};
@@ -112,13 +116,20 @@ function initializeStore(storePath, emitter, options, returnErrorAndStore) {
 			isCompacting = true;
 			execFile('node', [path.join(__dirname, 'bos-cli.js'), 'compact', storePath], function (error, stdout, stderr) {
 				isCompacting = false;
-				returnError && returnError(error || stderr);
+				if (error || stderr) {
+					store.emit('error', error || stderr);
+					returnError && returnError(error || stderr);
+					return;
+				}
+				returnError();
 			});
 		};
 
-		options.autoCompact && scheduleCompact(storePath, store, emitter, 0);
+		options.autoCompact && scheduleCompact(storePath, store, 0);
 
-		returnErrorAndStore(undefined, store);
+		store.emit('ready');
+
+		returnErrorAndStore && returnErrorAndStore(undefined, store);
 	});	
 }
 
@@ -131,21 +142,22 @@ module.exports = function (storePath, options, returnErrorAndStore) {
 	options.defaultObject = options.defaultObject || {};
 	options.autoCompact = typeof options.autoCompact === 'undefined' ? true : options.autoCompact;
 
-	var emitter = new events.EventEmitter();
+	var store = new events.EventEmitter();
 
 	lockFile.lock(storePath + LOCK_FILE_EXTENSION, function (error) {
 		if (error) {
 			if (error.code === 'EEXIST') {
 				error.description = 'Could not open data store because files are locked by another instance. If no other instance, manually delete ' + error.path;
 			}
-			returnErrorAndStore(error);
+			error && store.emit('error', error);
+			returnErrorAndStore && returnErrorAndStore(error);
 			return;
 		}
 
-		initializeStore(storePath, emitter, options, returnErrorAndStore);
+		initializeStore(storePath, store, options, returnErrorAndStore);
 	});
 
-	return emitter;
+	return store;
 };
 
 module.exports.unlock = core.unlock;

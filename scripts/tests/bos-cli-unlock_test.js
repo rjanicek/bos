@@ -5,13 +5,13 @@
 
 'use strict';
 
-var core = require('./bos-core');
+var core = require('../bos-core');
 var execFile = require('child_process').execFile;
 var fs = require('fs');
 var lockFile = require('lockfile');
 var path = require('path');
 
-var dataPath = path.join(__dirname, '../data');
+var dataPath = path.join(__dirname, '../../data');
 var filesPath = path.join(dataPath, 'store');
 
 exports.setup_delete_files = function (test) {

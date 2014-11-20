@@ -5,12 +5,12 @@
 
 'use strict';
 
-var bos = require('./bos');
-var core = require('./bos-core');
+var bos = require('../bos');
+var core = require('../bos-core');
 var fs = require('fs');
 var path = require('path');
 
-var dataPath = path.join(__dirname, '../data');
+var dataPath = path.join(__dirname, '../../data');
 var filesPath = path.join(dataPath, 'store');
 
 exports.setup_delete_files = function (test) {
@@ -31,16 +31,18 @@ exports.setup_delete_files = function (test) {
 exports.setup_create_store_with_log = function (test) {
 	test.expect(2);
 
-	bos(filesPath, { autoCompact: false }, function (error, store) {
-		test.ok(!error, error);
+	var store = bos(filesPath, { autoCompact: false }, function (error, store) {
+		error && console.error(error);
+		test.ifError(error);
 		store.data.cow = 'moo';
-	}).on('data', function (patches, store) {
+	}).on('data', function (patches) {
 		fs.exists(filesPath + core.DATA_LOG_FILE_EXTENSION, function (exists) {
 			test.ok(exists);
 			store.close(test.done);
 		});	
 	}).on('error', function (error) {
-		test.on(!error);
+		error && console.error(error);
+		test.ifError(error);
 	});
 };
 

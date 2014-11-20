@@ -5,12 +5,12 @@
 
 'use strict';
 
-var bos = require('./bos');
-var core = require('./bos-core');
+var bos = require('../bos');
+var core = require('../bos-core');
 var fs = require('fs');
 var path = require('path');
 
-var dataPath = path.join(__dirname, '../data');
+var dataPath = path.join(__dirname, '../../data');
 var filesPath = path.join(dataPath, 'store');
 
 exports.setUp = function (done) {
@@ -29,13 +29,16 @@ exports.setUp = function (done) {
 };
 
 exports.opening_same_files_in_second_instance_should_error = function (test) {
-	test.expect(2);
+	test.expect(3);
 
-	bos(filesPath, { autoCompact: false }, function (error, db) {
-		test.ok(!error, error);
+	bos(filesPath, { autoCompact: false }, function (error) {
+		error && console.error(error);
+		test.ifError(error);
 		bos(filesPath, { autoCompact: false }, function (error) {
 			test.ok(error);
 			test.done();
+		}).on('error', function (error) {
+			test.ok(error);
 		});
 	});
 };

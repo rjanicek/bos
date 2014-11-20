@@ -44,35 +44,49 @@ bos('data/store', function (error, store) {
 api
 ---
 
-#### bos(`dataStorePath`, `[options]`, `callback`)
-* `dataStorePath` String - Path and file name without extension where data store files will be saved.
-* `options` Object
-    * `defaultObject` Object, default = `{}` - The default object, can be `{}` or `[]` and can contain initial values.
-    * `autoCompact` Boolean, default = true - Automatically compact data store files if log is bigger than data on start-up and then on hourly interval.
-* `callback` `function (error, store)`
-    * `error` error info if error occurred when opening data store
-    * `store` Object - the data store
-        * ***`data` Object - The object that was created or loaded from disk. It will be observed and changes progressively saved to disk.***
-        * `close` `[function (error)]` Complete pending file writes and clean up, should always be called when done with data store.
-            * `function (error)` optional callback
-                * `error` error info if error occurred during close
-        * `compact` '[function (error)]' Spawns a new process that applies patches accumulated in the log file to the data file.
-            * `function (error)` optional callback that is called when compacting is done
-                * `error` error info if error occurred during compacting
-* events
-    * 'data' `function (patches, store) {}`
-        * `patches` Array - detected changes that were saved
-        * `store` Object - the data store
-    * 'error' `function (error, store) {}`
-        * `error` something went wrong!
-        * `store` Object - the data store
+#### bos(`dataStorePath`, `[options]`, `[callback(error, store)]`)
+Open or create a data store.
+* `dataStorePath` The path and file name without extension where th data store files will be saved. The directory must already exist.
+* `options` An optional options object.
+    * `defaultObject` The default object used to initialize a new data store. It can be `{}` or `[]` and can contain initial values. The default is `{}`.
+    * `autoCompact` A `boolean` that controls whether to automatically compact the data store files. If `true` the data store files will be compacted on start-up and then on hourly interval. Compacting also only occurs if the log file is bigger than the data file. The default is `true`.
+* `callback` An optional callback that is called when the data store is ready. It receives a possible error and the data store object.
+* returns `store` - The data store object is returned.
 
-#### bos.unlock(`dataStorePath`, `callback`)
-If your application exists without calling `close`, bos will try to unlock the data store files but in some cases this may not be possible. Use this function to manually unlock a data store.
-* `dataStorePath` String - Path and file name without extension of data store files to unlock.
-* `callback` `function (error)`
-    * `error` error info if error occurred when unlocking the data store
+-------------------------------------------------------------------------------
+#### store.data 
+`data` is the object that was created or loaded from disk. It will be observed and changes progressively saved to disk. `data` will be `undefined` until data store is loaded, which is signaled by the `ready` event.
 
+-------------------------------------------------------------------------------
+#### store.compact(`[callback(error)]`)
+Spawns a new process that applies patches accumulated in the log file to the data file. The optional callback is called when compacting is done and receives a possible error object.
+
+-------------------------------------------------------------------------------
+#### store.close(`[callback(error)]`)
+Completes pending file writes and cleans up. You should always call this function when done with the data store. The optional callback is called when closing is done and receives a possible error object.
+
+-------------------------------------------------------------------------------
+#### events
+
+#####`store.emit(`'ready'`)`
+The data store is open and ready for business.
+
+#####`store.emit(`'data'`, patches)`
+A change in the `store.data` object triggers this event. The event receives an array of `patches` that contain the changes.
+
+#####`store.emit(`'error'`, error)`
+Something went wrong, ohh noo! The event receives the error.
+
+#####`store.emit(`'closed'`)`
+The data store was closed.
+
+-------------------------------------------------------------------------------
+#### bos.unlock(`dataStorePath`, `callback(error)`)
+If your application exists without calling `store.close()`, bos will try to unlock the data store files but in some cases this may not be possible. Use `bos.unlock()` to manually unlock a data store.
+* `dataStorePath` Is the path and file name without extension of the data store files to unlock.
+* `callback(error)` Called when unlocking the data store files is done and receives possible error info.
+
+-------------------------------------------------------------------------------
 cli
 ---
 ```
@@ -96,7 +110,7 @@ files
 
 tips
 ----
-* Store dates as the number of milliseconds since 1 January 1970 00:00:00 UTC `new Date().getTime()` This allows more efficient querying by date / time, no need to parse date strings.
+* Store dates as the number of milliseconds since the Unix epoch (1 January 1970 00:00:00 UTC) `new Date().getTime()` This allows more efficient querying by date / time, no need to parse date strings.
 * use objects with keys to efficieltly find data
 ```JavaScript
 var cows = {
@@ -124,7 +138,6 @@ _.find(cows, function(cow) {
 
 tasks
 -----
-
 * account for failed data write during compacting
     * temp patch file would not get deleted, so maybe check it's existence during next compacting and merge it before the active patch file
 

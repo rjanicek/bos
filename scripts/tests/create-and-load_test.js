@@ -5,12 +5,12 @@
 
 'use strict';
 
-var bos = require('./bos');
-var core = require('./bos-core');
+var bos = require('../bos');
+var core = require('../bos-core');
 var fs = require('fs');
 var path = require('path');
 
-var dataPath = path.join(__dirname, '../data');
+var dataPath = path.join(__dirname, '../../data');
 var filesPath = path.join(dataPath, 'store');
 
 exports.setup = function (test) {
@@ -60,10 +60,10 @@ exports.should_load_existing_object = function (test) {
 exports.should_update_object_and_create_log_file = function (test) {
 	test.expect(2);
 
-	bos(filesPath, { autoCompact: false }, function (error, store) {
+	var store = bos(filesPath, { autoCompact: false }, function (error, store) {
 		test.ok(!error, error);
 		store.data.cow = 'moo';
-	}).on('data', function (patches, store) {
+	}).on('data', function (patches) {
 		fs.exists(filesPath + core.DATA_LOG_FILE_EXTENSION, function (exists) {
 			test.ok(exists);
 			store.close(test.done);
