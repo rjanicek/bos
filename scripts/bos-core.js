@@ -175,6 +175,11 @@ me.unlock = function (storePath, returnError) {
 	], returnError);
 };
 
+me.unlockSync = function (storePath) {
+	lockFile.unlockSync(storePath + LOCK_FILE_EXTENSION);
+	lockFile.unlockSync(storePath + MUTEX_FILE_EXTENSION);
+};
+
 me.DATA_FILE_EXTENSION = DATA_FILE_EXTENSION;
 me.DATA_LOG_FILE_EXTENSION = DATA_LOG_FILE_EXTENSION;
 me.LOCK_FILE_EXTENSION = LOCK_FILE_EXTENSION;

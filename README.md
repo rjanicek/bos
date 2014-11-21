@@ -90,6 +90,12 @@ If your application exists without calling `store.close()`, bos will try to unlo
 * `callback(error)` Called when unlocking the data store files is done and receives possible error info.
 
 -------------------------------------------------------------------------------
+#### bos.unlockSync(`dataStorePath`)
+Synchronous version  of bos.unlock().
+* `dataStorePath` Is the path and file name without extension of the data store files to unlock.
+
+-------------------------------------------------------------------------------
+
 cli
 ---
 ```

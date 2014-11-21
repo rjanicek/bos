@@ -190,3 +190,4 @@ module.exports = function (storePath, options, returnErrorAndStore) {
 };
 
 module.exports.unlock = core.unlock;
+module.exports.unlockSync = core.unlockSync;
