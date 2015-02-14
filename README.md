@@ -46,7 +46,7 @@ api
 
 #### bos(`dataStorePath`, `[options]`, `[callback(error, store)]`)
 Open or create a data store.
-* `dataStorePath` The path and file name without extension where th data store files will be saved. The directory must already exist.
+* `dataStorePath` The path and file name without extension where the data store files will be saved. The directory must already exist.
 * `options` An optional options object.
     * `defaultObject` The default object used to initialize a new data store. It can be `{}` or `[]` and can contain initial values. The default is `{}`.
     * `autoCompact` A `boolean` that controls whether to automatically compact the data store files. If `true` the data store files will be compacted on start-up and then on hourly interval. Compacting also only occurs if the log file is bigger than the data file. The default is `true`.
@@ -85,7 +85,7 @@ The data store was closed.
 
 -------------------------------------------------------------------------------
 #### bos.unlock(`dataStorePath`, `callback(error)`)
-If your application exists without calling `store.close()`, bos will try to unlock the data store files but in some cases this may not be possible. Use `bos.unlock()` to manually unlock a data store.
+If your application exits without calling `store.close()`, bos will try to unlock the data store files but in some cases this may not be possible. Use `bos.unlock()` to manually unlock a data store.
 * `dataStorePath` Is the path and file name without extension of the data store files to unlock.
 * `callback(error)` Called when unlocking the data store files is done and receives possible error info.
 
@@ -147,8 +147,13 @@ _.find(cows, function(cow) {
 
 tasks
 -----
+* create a test for setting undefined throws error
 * account for failed data write during compacting
     * temp patch file would not get deleted, so maybe check it's existence during next compacting and merge it before the active patch file
+
+issues
+------
+* Will throw an exception if `undefined` value is set. ie: `store.data.singularity = undefined` see: https://github.com/Starcounter-Jack/JSON-Patch/issues/32
 
 algorithm
 ---------
